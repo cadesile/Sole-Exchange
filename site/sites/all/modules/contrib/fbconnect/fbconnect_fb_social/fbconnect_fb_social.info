@@ -1,0 +1,13 @@
+; $Id: fbconnect_fb_social.info,v 1.1.2.1 2010/08/24 14:07:15 vectoroc Exp $
+name =  fbconnect-fb_social integration
+description = Provides fb social module integration
+dependencies[] = fb_social
+dependencies[] = fbconnect
+package = "Facebook Social"
+core = 6.x
+; Information added by drupal.org packaging script on 2010-10-06
+version = "6.x-2.0-alpha3"
+core = "6.x"
+project = "fbconnect"
+datestamp = "1286386272"
+
