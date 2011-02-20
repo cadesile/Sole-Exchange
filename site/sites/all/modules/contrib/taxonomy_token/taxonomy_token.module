@@ -1,0 +1,512 @@
+<?php
+// $Id: taxonomy_token.module,v 1.1.2.14 2010/12/10 19:28:41 rsevero Exp $
+
+/**
+ * @File
+ *   Taxonomy Token module file.
+ */
+
+define('TAXONOMY_TOKEN_SEPARATOR', '-');
+define('TAXONOMY_TOKEN_NO_TOKEN', 0);
+define('TAXONOMY_TOKEN_SINGLE_TERM_TOKEN', 1);
+define('TAXONOMY_TOKEN_SINGLE_AND_FULL_PATH_TERM_TOKEN', 2);
+define('TAXONOMY_TOKEN_BOTTOM_TERM_TOKEN', 3);
+
+/**
+ * Implementation of hook_menu().
+ *
+ */
+function taxonomy_token_menu() {
+  $items = array();
+
+  $items['admin/content/taxonomy/token'] = array(
+    'title' => 'Tokens',
+    'description' => 'Set which vocabularies will have specific tokens',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('taxonomy_token_vocabularies_form'),
+    'access arguments' => array('administer taxonomy'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_help().
+ */
+function taxonomy_token_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#taxonomy_token':
+      return '<p>' . t('Taxonomy Token provides token replacements for selected vocabularies.') .
+        '</p>';
+
+    case 'admin/settings/taxonomy_token':
+      return '<p>' . t('Settings page for Taxonomy Token module.') . '</p>';
+  }
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function taxonomy_token_theme() {
+  $themes =  array(
+    'taxonomy_token_vocabulary_list' => array(
+      'arguments' => array('form' => array()),
+    ),
+  );
+  return $themes;
+}
+
+/**
+ *  Token type per vocabulary choosing form for Taxonomy Token.
+ */
+function taxonomy_token_vocabularies_form() {
+  $form = array();
+
+  $form = array('#tree' => TRUE);
+
+  $form['main_instructions'] = array(
+    '#type' => 'markup',
+    '#value' => "\n<p>" . t('Choose the token types you want for each vobaculary.') . "</p>\n",
+  );
+
+  /**
+   * Getting vocabularies.
+   */
+  $result = db_query("
+    SELECT vid, name
+      FROM {vocabulary}
+      ORDER BY weight, name, vid"
+  );
+  $current_options = variable_get('taxonomy_token_token_type_per_taxonomy', array());
+  $no_token_text = t('No top term tokens for this vocabulary');
+  $single_token_text = t('Create only single top term tokens for this vocabulary.');
+  $path_token_text = t('Create both single and complete path top term tokens for this vocabulary.');
+  $no_bottom_token_text = t('No bottom term tokens for this vocabulary.');
+  $bottom_token_text = t('Create bottom term tokens for this vocabulary.');
+  $form['vocabularies'] = array(
+    '#theme' => 'taxonomy_token_vocabulary_list',
+  );
+  while ($row = db_fetch_array($result)) {
+    $vid = (int) $row['vid'];
+    $fieldset_id = sprintf('taxonomy_token_%d', $vid);
+    $form['vocabularies'][$fieldset_id]['name'] = array(
+      '#value' => check_plain($row['name']) . sprintf(' (vid %d)', $vid),
+    );
+    $form['vocabularies'][$fieldset_id]['vid'] = array(
+      '#type' => 'value',
+      '#value' => $vid,
+    );
+
+    $default_value = isset($current_options[$vid]['top']) ?
+      $current_options[$vid]['top'] :
+      TAXONOMY_TOKEN_NO_TOKEN;
+    $form['vocabularies'][$fieldset_id]['top_token_type'] = array(
+      '#type' => 'radios',
+      '#required' => TRUE,
+      '#default_value' => $default_value,
+      '#options' => array(
+        TAXONOMY_TOKEN_NO_TOKEN => $no_token_text,
+        TAXONOMY_TOKEN_SINGLE_TERM_TOKEN => $single_token_text,
+        TAXONOMY_TOKEN_SINGLE_AND_FULL_PATH_TERM_TOKEN => $path_token_text,
+      ),
+    );
+
+    $default_value = isset($current_options[$vid]['bottom']) ?
+      $current_options[$vid]['bottom'] :
+      TAXONOMY_TOKEN_NO_TOKEN;
+    $form['vocabularies'][$fieldset_id]['bottom_token_type'] = array(
+      '#type' => 'radios',
+      '#required' => TRUE,
+      '#default_value' => $default_value,
+      '#options' => array(
+        TAXONOMY_TOKEN_NO_TOKEN => $no_bottom_token_text,
+        TAXONOMY_TOKEN_BOTTOM_TERM_TOKEN => $bottom_token_text,
+      ),
+    );
+  }
+
+  $form['taxonomy_token_termpath_separator'] = array(
+    '#type' => 'textfield',
+    '#size' => 10,
+    '#required' => TRUE,
+    '#title' => t('Term path separator'),
+    '#description' => t('Set the separator for the terms paths.'),
+    '#default_value' => variable_get('taxonomy_token_termpath_separator', '/'),
+  );
+
+  $form['buttons']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration') ,
+  );
+  $form['buttons']['reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Reset to defaults') ,
+  );
+
+  return $form;
+}
+
+/**
+ * Theme function for the taxonomy_token_vocabularies_form form.
+ */
+function theme_taxonomy_token_vocabulary_list($form) {
+  $rows = array();
+  foreach (element_children($form) as $key) {
+    if (isset($form[$key]['top_token_type'])) {
+      $menu = &$form[$key];
+      $row = array();
+      $row[] = drupal_render($menu['name']);
+      $row[] = drupal_render($menu['top_token_type']);
+      $row[] = drupal_render($menu['bottom_token_type']);
+      $rows[] = array('data' => $row, 'class' => 'draggable');
+    }
+  }
+  if (empty($rows)) {
+    $rows[] = array(array('data' => t('No vocabularies created.'), 'colspan' => '3'));
+  }
+
+  $header = array(t('Taxonomy'));
+  $header[] = array('data' => t('Top term'));
+  $header[] = array('data' => t('Bottom term'));
+  return theme('table', $header, $rows, array('id' => 'taxonomy_token_token_type_per_taxonomy'));
+}
+
+/**
+ * Submit method for the taxonomy_token_vocabularies_form form.
+ */
+function taxonomy_token_vocabularies_form_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#value'] === t('Reset to defaults')) {
+    variable_del('taxonomy_token_token_type_per_taxonomy');
+    variable_del('taxonomy_token_termpath_separator');
+    $msg = t('Token type per vocabulary settings cleared.');
+  }
+  else {
+    $token_per_vocab = array();
+    foreach ($form_state['values']['vocabularies'] as $value) {
+      $top_token_type = (int) $value['top_token_type'];
+      $bottom_token_type = (int) $value['bottom_token_type'];
+      if (($top_token_type != TAXONOMY_TOKEN_NO_TOKEN) ||
+          ($bottom_token_type != TAXONOMY_TOKEN_NO_TOKEN)) {
+        $token_per_vocab[(int) $value['vid']] = array(
+          'top' => $top_token_type,
+          'bottom' => $bottom_token_type,
+        );
+      }
+    }
+    variable_set('taxonomy_token_token_type_per_taxonomy', $token_per_vocab);
+    variable_set(
+      'taxonomy_token_termpath_separator',
+      $form_state['values']['taxonomy_token_termpath_separator']
+    );
+    $msg = t('Token type per vocabulary settings saved.');
+  }
+  drupal_set_message($msg);
+}
+
+/**
+ * Implementation of hook_token_list().
+ */
+function taxonomy_token_token_list($type = 'all') {
+  $tokens = array();
+  if (($type == 'node') || ($type == 'all')) {
+    $token_type_per_vocab = variable_get('taxonomy_token_token_type_per_taxonomy', array());
+    if (count($token_type_per_vocab) == 0) {
+      return $tokens;
+    }
+    $vids = array_keys($token_type_per_vocab);
+    $result = db_query(
+      "SELECT vid, name
+        FROM {vocabulary}
+        WHERE vid IN (" . db_placeholders($vids, 'int') . ")
+        ORDER BY weight, name, vid",
+      $vids
+    );
+    while ($row = db_fetch_array($result)) {
+      $vid = (int) $row['vid'];
+      $name = $row['name'];
+      $label = 'node:vocab:' . $vid;
+
+      /**
+       * Bottom term tokens.
+       */
+      if (isset($token_type_per_vocab[$vid]) &&
+        isset($token_type_per_vocab[$vid]['bottom']) &&
+        ($token_type_per_vocab[$vid]['bottom'] != TAXONOMY_TOKEN_NO_TOKEN)) {
+
+        $term = $label . ':bottomterm';
+        $tokens['node'][$term] = t(
+          'Bottom term name in vocabulary %vocabulary_name.',
+          array('%vocabulary_name' => $name)
+        );
+        $term_url = $label . ':bottomterm:url';
+        $tokens['node'][$term_url] = t(
+          'Bottom term name in vocabulary %vocabulary_name modified to be used in URLs and paths (Pathauto for example).',
+          array('%vocabulary_name' => $name)
+        );
+        $term_raw = $label . ':bottomterm-raw';
+        $tokens['node'][$term_raw] = t(
+          'Unfiltered name of bottom term in vocabulary %vocabulary_name. WARNING - raw user input.',
+          array('%vocabulary_name' => $name)
+        );
+        $tokens['node'][$label . ':bottomterm-id'] = t(
+          'ID of bottom term in vocabulary %vocabulary_name.',
+          array('%vocabulary_name' => $name)
+        );
+        $tokens['node'][$label . ':bottomtermalias'] = t(
+          'URL alias for the bottom term in vocabulary %vocabulary_name.',
+          array('%vocabulary_name' => $name)
+        );
+      }
+
+      /**
+       * Top term tokens.
+       */
+      if (isset($token_type_per_vocab[$vid]) &&
+        isset($token_type_per_vocab[$vid]['top']) &&
+        ($token_type_per_vocab[$vid]['top'] != TAXONOMY_TOKEN_NO_TOKEN)) {
+
+        $term = $label . ':term';
+        $tokens['node'][$term] = t(
+          'Top term name in vocabulary %vocabulary_name.',
+          array('%vocabulary_name' => $name)
+        );
+        $term_url = $label . ':term:url';
+        $tokens['node'][$term_url] = t(
+          'Top term name in vocabulary %vocabulary_name modified to be used in URLs and paths (Pathauto for example).',
+          array('%vocabulary_name' => $name)
+        );
+        $term_raw = $label . ':term-raw';
+        $tokens['node'][$term_raw] = t(
+          'Unfiltered name of top term in vocabulary %vocabulary_name. WARNING - raw user input.',
+          array('%vocabulary_name' => $name)
+        );
+        $tokens['node'][$label . ':term-id'] = t(
+          'ID of top term in vocabulary %vocabulary_name.',
+          array('%vocabulary_name' => $name)
+        );
+        $tokens['node'][$label . ':termalias'] = t(
+          'URL alias for the top term in vocabulary %vocabulary_name.',
+          array('%vocabulary_name' => $name)
+        );
+
+        if ($token_type_per_vocab[$vid]['top'] == TAXONOMY_TOKEN_SINGLE_AND_FULL_PATH_TERM_TOKEN) {
+          $termpath_separator = variable_get(
+            'taxonomy_token_termpath_separator',
+            '/'
+          );
+          $tokens['node'][$label . ':termpath'] = t(
+            "As [@term], but including its supercategories separated by '@separator'.",
+            array(
+              '@term' => $term,
+              '@separator' => $termpath_separator,
+            )
+          );
+          $tokens['node'][$label . ':termpath:url'] = t(
+            "As [@term_url], but including its supercategories separated by '@separator'.",
+            array(
+              '@term_url' => $term_url,
+              '@separator' => $termpath_separator,
+            )
+          );
+          $tokens['node'][$label . ':termpath-raw'] = t(
+            "As [@term_raw], but including its supercategories separated by '@separator'. WARNING - raw user input.",
+            array(
+              '@term_raw'=> $term_raw,
+              '@separator' => $termpath_separator,
+            )
+          );
+        }
+      }
+    }
+  }
+  return $tokens;
+}
+
+/**
+ * Implementation of hook_token_values().
+ */
+function taxonomy_token_token_values($type, $object = NULL) {
+  $values = array();
+  $node = $object;
+  if ((($type === 'node') || ($type === 'all')) && is_array($node->taxonomy)) {
+    $token_type_per_vocab = variable_get(
+      'taxonomy_token_token_type_per_taxonomy',
+      array()
+    );
+
+    /**
+     * If there are no taxonomies configured to have tokens we can just return
+     * an empty array.
+     */
+    if (count($token_type_per_vocab) == 0) {
+      return $values;
+    }
+
+    $vids = array_keys($token_type_per_vocab);
+    $result_vocabs = db_query(
+      "SELECT vid, name
+        FROM {vocabulary}
+        WHERE vid IN (" . db_placeholders($vids, 'int') . ")",
+      $vids
+    );
+    while ($row_vocabs = db_fetch_array($result_vocabs)) {
+      $vid = (int) $row_vocabs['vid'];
+      $name = $row_vocabs['name'];
+      $query = db_query_range("
+        SELECT td.tid, td.name
+          FROM {term_node} tn
+            INNER JOIN {term_data} td
+              ON tn.tid = td.tid
+          WHERE td.vid = %d
+            AND tn.nid = %d
+          ORDER BY tn.vid DESC, td.weight, td.name",
+        $vid,
+        $node->nid,
+        0,
+        1
+      );
+      $result = db_fetch_array($query);
+      $label = 'node:vocab:' . $vid;
+      if ($result) {
+        $tid = (int) $result['tid'];
+
+        /**
+         * Only call taxonomy_get_parents_all() if it is really necessary, i.e.,
+         * if full path or bottom term tokens should be built as
+         * taxonomy_get_parents_all() is kind of heavy on the performance impact
+         * side.
+         */
+        if ((isset($token_type_per_vocab[$vid]['top']) &&
+          ($token_type_per_vocab[$vid]['top'] == TAXONOMY_TOKEN_SINGLE_AND_FULL_PATH_TERM_TOKEN)) ||
+
+          (isset($token_type_per_vocab[$vid]['bottom']) &&
+          ($token_type_per_vocab[$vid]['bottom'] != TAXONOMY_TOKEN_NO_TOKEN))) {
+
+          $parents = taxonomy_get_parents_all($tid);
+          $term = $parents[0];
+          $bottomterm = $parents[count($parents) - 1];
+        }
+        else {
+          $term = taxonomy_get_term($tid);
+        }
+
+        if (isset($token_type_per_vocab[$vid]['top']) &&
+          ($token_type_per_vocab[$vid]['top'] != TAXONOMY_TOKEN_NO_TOKEN)) {
+
+          $values[$label . ':termalias'] = drupal_get_path_alias(taxonomy_term_path($term));
+          $values[$label . ':term'] = check_plain($term->name);
+          $values[$label . ':term:url'] = _taxonomy_token_string_to_path($term->name);
+          $values[$label . ':term-raw'] = $term->name;
+          $values[$label . ':term-id'] = (int) $term->tid;
+        }
+
+        if (isset($token_type_per_vocab[$vid]['bottom']) &&
+          ($token_type_per_vocab[$vid]['bottom'] != TAXONOMY_TOKEN_NO_TOKEN)) {
+
+          $values[$label . ':bottomtermalias'] = drupal_get_path_alias(taxonomy_term_path($bottomterm));
+          $values[$label . ':bottomterm'] = check_plain($bottomterm->name);
+          $values[$label . ':bottomterm:url'] = _taxonomy_token_string_to_path($bottomterm->name);
+          $values[$label . ':bottomterm-raw'] = $bottomterm->name;
+          $values[$label . ':bottomterm-id'] = $bottomterm->tid;
+        }
+
+        if (isset($token_type_per_vocab[$vid]['top']) &&
+          ($token_type_per_vocab[$vid]['top'] == TAXONOMY_TOKEN_SINGLE_AND_FULL_PATH_TERM_TOKEN)) {
+
+          $termpath_separator = variable_get(
+            'taxonomy_token_termpath_separator',
+            '/'
+          );
+          array_shift($parents);
+          $termpath = '';
+          $termpath_url = '';
+          $termpath_raw = '';
+          foreach ($parents as $parent) {
+            $termpath = check_plain($parent->name) . $termpath_separator .
+              $termpath;
+            $termpath_url = _taxonomy_token_string_to_path($parent->name) . 
+              $termpath_separator . $termpath_url;
+            $termpath_raw = $parent->name . $termpath_separator . $termpath_raw;
+          }
+          $values[$label . ':termpath'] = $termpath . check_plain($term->name);
+          $values[$label . ':termpath:url'] = $termpath_url .
+            _taxonomy_token_string_to_path($term->name);
+          $values[$label . ':termpath-raw'] = $termpath_raw . $term->name;
+        }
+      }
+      else {
+        if (isset($token_type_per_vocab[$vid]['top']) &&
+          ($token_type_per_vocab[$vid]['top'] != TAXONOMY_TOKEN_NO_TOKEN)) {
+
+          $values[$label . ':term'] = '';
+          $values[$label . ':term:url'] = '';
+          $values[$label . ':term-raw'] = '';
+          $values[$label . ':term-id'] = '';
+          $values[$label . ':termalias'] = '';
+        }
+
+        if (isset($token_type_per_vocab[$vid]['top']) &&
+          ($token_type_per_vocab[$vid]['top'] == TAXONOMY_TOKEN_SINGLE_AND_FULL_PATH_TERM_TOKEN)) {
+
+          $values[$label . ':termpath'] = '';
+          $values[$label . ':termpath:url'] = '';
+          $values[$label . ':termpath-raw'] = '';
+        }
+
+        if (isset($token_type_per_vocab[$vid]['bottom']) &&
+          ($token_type_per_vocab[$vid]['bottom'] != TAXONOMY_TOKEN_NO_TOKEN)) {
+
+          $values[$label . ':bottomterm'] = '';
+          $values[$label . ':bottomterm:url'] = '';
+          $values[$label . ':bottomterm-raw'] = '';
+          $values[$label . ':bottomterm-id'] = '';
+          $values[$label . ':bottomtermalias'] = '';
+        }
+      }
+
+    }
+  }
+  return $values;
+}
+
+/**
+ * Modifies passed string to be more path-like.
+ *
+ * @staticvar <string> $transliterate_method
+ * @param <string> $string
+ * @return <string>
+ */
+function _taxonomy_token_string_to_path($string) {
+  static $transliterate_method = NULL;
+
+  if ($transliterate_method === NULL) {
+    if (module_exists('pathauto')) {
+      require_once realpath(drupal_get_path('module', 'pathauto')) . '/pathauto.inc';
+      $transliterate_method = 'pathauto';
+    }
+    else {
+      $transliterate_method = 'iconv';
+    }
+  }
+  switch ($transliterate_method) {
+    case 'pathauto':
+      $output = pathauto_cleanstring($string);
+      break;
+
+    case 'iconv':
+    default:
+      $output = iconv('UTF-8', 'ASCII//TRANSLITE', $string);
+      $output = str_replace(
+        array(' ', '\\', '/', '!', '&', '*', '@', '`', '^', ',', ';', ':', '$',
+          '"', "'", '=', '>', '<', '#', '(', '[', ']', ')', '{', '}', '%', '|',
+          '.', '+', '?', '~', '_'
+        ),
+        '-',
+        $output
+      );
+      $output = strtolower($output);
+      break;
+  }
+  return $output;
+}

@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- $Id: comparison_with_category_tokens.html,v 1.1.2.2 2010/10/27 11:40:36 rsevero Exp $ -->
+<html>
+  <head>
+    <title>Taxonomy Token - comparison with Category Tokens module</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  </head>
+  <body>
+    <p>The Taxonomy Token module is similar to the 
+      <a href="http://drupal.org/project/category_tokens">Category Tokens</a> 
+      module. Here is an attempt to outline it's differences.</p>
+    <h3>Vocabulary identification method</h3>
+      <p>Taxonomy Token uses the vocabulary id (number) to identify the vocabulary
+        in the token name. For example <strong>[node:vocab:1:term]</strong> is
+        the top term name in vocabulary with id 1. This method guarantees that
+        token names remain constant even in case some vocabulary name is edited.</p>
+      <p>Category Tokens used a simplified version of the vocabulary name. For
+        example <strong>[first-term-name-in-office-position-or-title]</strong>
+        would result in the same info as above if the vocabulary with id 1 is
+        named "Office, position or title". This method provides more readable
+        token names.</p>
+    <h3>Available tokens</h3>
+      <p>Taxonomy Token offer a few tokens not available in Category Tokens,
+        namely the tokens that provide all parents of each token:</p>
+      <dl>
+        <dt>[node:vocab:TID:termpath]</dt>
+          <dd>As [node:vocab:TID:term] above but including its supercategories
+            separated by /.</dd>
+        <dt>[node:vocab:TID:termpath:url]</dt>
+          <dd>As [node:vocab:TID:term:url] above but including its
+            supercategories separated by /.</dd>
+        <dt>[node:vocab:TID:termpath-raw]</dt>
+          <dd>As [node:vocab:TID:term-raw] above but including its
+            supercategories separated by /. WARNING - raw user input.</dd>
+      </dl>
+    <h3>Configuration options X performance impact</h3>
+      <p>Taxonomy Tokens allows the user to set one of the following token type
+        options per taxonomy:</p>
+      <ol>
+        <li>no tokens generated;</li>
+        <li>only single term tokens generated;</li>
+        <li>single and complete (full path) token generated.</li>
+      </ol>
+      <p>With these options the performance impact of the module can be reduced
+        to the minimum necessary to achieve the desired results by enabling
+        token generation only for the pertinent taxonomies.</p>
+      <p>Category Tokens has no similar configuration options.</p>
+  </body>
+</html>

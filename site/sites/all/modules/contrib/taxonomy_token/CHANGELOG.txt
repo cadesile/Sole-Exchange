@@ -1,0 +1,70 @@
+; $Id: CHANGELOG.txt,v 1.1.2.23 2010/12/10 19:30:48 rsevero Exp $
+
+
+Taxonomy Token 6.x-1.3, 2010-12-10
+---------------------------
+task by rsevero #994918: Moved settings page from
+  <admin/settings/taxonomy_token> to <admin/content/taxonomy/token>.
+
+
+Taxonomy Token 6.x-1.2, 2010-12-10
+---------------------------
+bug #954584: by pixelpreview and rsevero: Fixed long standing bug where term
+  where not updated sometimes if the node type had revisions enabled.
+
+
+Taxonomy Token 6.x-1.1, 2010-11-22
+---------------------------
+feature #978674 by inductor and rsevero: Implemented configurable term path
+  separator.
+feature #979110 by rsevero: Implemented hook_help().
+
+
+Taxonomy Token 6.x-1.0, 2010-11-04
+---------------------------
+task by rsevero: Renamed to 6.x-1.0.
+
+
+Taxonomy Token 6.x-1.0-RC3, 2010-10-28
+---------------------------
+task #954376 by rsevero: Included list of tokens available only in Taxonomy
+  Token and not in Category Tokens.
+bug #956038 by rsevero: Fixed bottom terms.
+task #956154 by rsevero: Make bottom term token creation optional.
+task #956190 by rsevero: Implemented warning about Category Tokens module.
+task #956196 by rsevero: Included info about optional creation of bottom term
+  tokens in Advanced Help pages.
+
+
+Taxonomy Token 6.x-1.0-RC2, 2010-10-26
+---------------------------
+bug #953890 by rsevero: Fixed return value of taxonomy_token_token_values() when
+  there are no taxonomies configured to have tokens.
+bug #951140 by dman and rsevero: Removed unnecessary test on non-existent token
+  'alias'.
+task #929706: by dman and rsevero: Improved advanced help documentation inspired
+  on http://drupal.org/node/921288#comment-3616452 by dman.
+feature #953968 by rsevero: Implemented bottom term tokens.
+task #873856 by rsevero: Created advanced help page comparing Taxonomy Token
+  with Category Tokens.
+
+
+Taxonomy Token 6.x-1.0-RC1, 2010-08-13
+---------------------------
+task by rsevero: Renamed beta 1 to rc 1.
+
+
+Taxonomy Token 6.x-1.0-BETA1, 2010-08-06
+---------------------------
+task by rsevero: Updated CHANGELOG file.
+task #869470 by rsevero: Changed uninstall method.
+
+
+Taxonomy Token 6.x-1.0-ALPHA2, 2010-07-30
+---------------------------
+task #869442 by rsevero: Substituted magic numbers for properly named constants.
+feature #869432 by rsevero: Modified and created tokens.
+
+
+Taxonomy Token 6.x-1.0-ALPHA1, 2010-07-29
+---------------------------

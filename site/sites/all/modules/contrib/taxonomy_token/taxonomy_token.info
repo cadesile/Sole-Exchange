@@ -1,0 +1,16 @@
+; $Id: taxonomy_token.info,v 1.1 2010/07/29 21:09:36 rsevero Exp $
+
+name = Taxonomy Token
+description = Taxonomy Token provides token replacements for selected vocabularies.
+dependencies[] = taxonomy
+dependencies[] = token
+package = Taxonomy
+core = 6.x
+php = 5.1
+
+; Information added by drupal.org packaging script on 2010-12-10
+version = "6.x-1.4"
+core = "6.x"
+project = "taxonomy_token"
+datestamp = "1292010080"
+

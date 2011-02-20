@@ -1,0 +1,99 @@
+<?php
+// $Id: taxonomy_token.install,v 1.1.2.5 2010/12/10 19:28:41 rsevero Exp $
+
+/**
+ * @file
+ *   Install file for Taxonomy Token module.
+ *
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function taxonomy_token_install() {
+  /**
+   * All existing vocabularies get single top term tokens by default when
+   * installing module.
+   */
+  $result = db_query("SELECT vid
+      FROM {vocabulary}"
+  );
+  $tokens_per_vocabulary = array();
+  while ($row = db_fetch_array($result)) {
+    $tokens_per_vocabulary[(int) $row['vid']] = array(
+      'top' => 1,
+      'bottom' => 0,
+    );
+  }
+  variable_set('taxonomy_token_token_type_per_taxonomy', $tokens_per_vocabulary);
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function taxonomy_token_uninstall() {
+  variable_del('taxonomy_token_token_type_per_taxonomy');
+  variable_del('taxonomy_token_termpath_separator');
+}
+
+/**
+ * Implementation of hook_requirements().
+ */
+function taxonomy_token_requirements($phase) {
+  $requirements = array();
+
+  // Ensure translations don't break at install time.
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+
+    if (!function_exists('iconv')) {
+      $requirements['taxonomy_token_iconv'] = array(
+        'title' => $t('iconv PHP function'),
+        'description' => $t("Taxonomy Token module requires the 'iconv' PHP
+          function for proper cleaning of UTF-8 vocabulary names. The PHP
+          running now don't have support for it. Please consider enabling it."
+        ),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('Not available'),
+      );
+    }
+
+     if (module_exists('token_vocab')) {
+      $requirements['taxonomy_token_token_vocab'] = array(
+        'title' => $t('Token for Vocabularies'),
+        'description' => $t("You have the Token for Vocabularies module and the
+          Taxonomy Token module enabled. Please consider disabling and
+          uninstalling one of them."
+        ),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('Enabled'),
+      );
+    }
+
+    if (module_exists('category_tokens')) {
+      $requirements['taxonomy_token_category_tokens'] = array(
+        'title' => $t('Category Tokens'),
+        'description' => $t("You have the Category Tokens module and the
+          Taxonomy Token module enabled. Please consider disabling and
+          uninstalling one of them."
+        ),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('Enabled'),
+      );
+    }
+
+  }
+
+  return $requirements;
+}
+
+/**
+ * Update function to rebuild menu entries so new location of settings page is
+ * presented to the user.
+ */
+function taxonomy_token_update_6100(&$sandbox) {
+  menu_rebuild();
+  return array();
+}
+

@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- $Id: tokens_list.html,v 1.1.2.2 2010/10/28 20:36:30 rsevero Exp $ -->
+<html>
+  <head>
+    <title>Taxonomy Token - Tokens list</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  </head>
+  <body>
+    <p>Taxonomy Token provides the following tokens for taxonomies set as 
+      "single bottom term" on the settings page:</p>
+    <dl>
+      <dt>[node:vocab:TID:bottomterm]</dt>
+        <dd>Bottom term name in vocabulary with id = TID.</dd>
+      <dt>[node:vocab:TID:bottomterm:url]</dt>
+        <dd>Bottom term name in vocabulary with id = TID modified to be used in
+          URLs and paths (Pathauto for example).</dd>
+      <dt>[node:vocab:TID:bottomterm-raw]</dt>
+        <dd>Unfiltered name of bottom term in vocabulary with id = TID. WARNING - 
+          raw user input.</dd>
+      <dt>[node:vocab:TID:bottomterm-id]</dt>
+        <dd>ID of bottom term in vocabulary with id = TID.</dd>
+      <dt>[node:vocab:TID:bottomtermalias]</dt>
+        <dd>URL alias for the bottom term.</dd>
+    <p>Taxonomy Token provides the following tokens for taxonomies set as
+      "single top term" on the settings page:</p>
+      <dt>[node:vocab:TID:term]</dt>
+        <dd>Top term name in vocabulary with id = TID.</dd>
+      <dt>[node:vocab:TID:term:url]</dt>
+        <dd>Top term name in vocabulary with id = TID modified to be used in
+          URLs and paths (Pathauto for example).</dd>
+      <dt>[node:vocab:TID:term-raw]</dt>
+        <dd>Unfiltered name of top term in vocabulary with id = TID. WARNING - 
+          raw user input.</dd>
+      <dt>[node:vocab:TID:term-id]</dt>
+        <dd>ID of top term in vocabulary with id = TID.</dd>
+      <dt>[node:vocab:TID:termalias]</dt>
+        <dd>URL alias for the top term.</dd>
+    </dl>
+    <p>
+      For taxonomies set as "single and complete path" in the settings page the
+      following tokens are <strong>also</strong> created:
+    </p>
+    <dl>
+      <dt>[node:vocab:TID:termpath]</dt>
+        <dd>As [node:vocab:TID:term] above but including its supercategories
+          separated by /.</dd>
+      <dt>[node:vocab:TID:termpath:url]</dt>
+        <dd>As [node:vocab:TID:term:url] above but including its supercategories
+          separated by /.</dd>
+      <dt>[node:vocab:TID:termpath-raw]</dt>
+        <dd>As [node:vocab:TID:term-raw] above but including its supercategories
+          separated by /. WARNING - raw user input.</dd>
+    </dl>
+    <p>The taxonomy id (TID) is used to identify each taxonomy instead of some
+      simplified version of the taxonomy name as the first is invariant and the
+      former can be edited at any time. If the taxonomy name was used to 
+      identify taxonomy tokens any change in the taxonomy name would require
+      also editing of all taxonomy tokens already in use.</p>
+  </body>
+</html>
